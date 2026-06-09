@@ -9,5 +9,4 @@
 *.Rproj
 /doc/
 /Meta/
-/*_sqlite/
-/vignettes/plant_txdb_sqlite/
+/help/
