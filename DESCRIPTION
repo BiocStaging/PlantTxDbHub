@@ -1,0 +1,35 @@
+Package: PlantTxDbHub
+Title: AnnotationHub‑based TxDb databases for Arabidopsis, rice, and soybean
+Description: Provides TxDb (transcript database) annotations for three plant
+    species: Arabidopsis thaliana (TAIR10), Oryza sativa (IRGSP‑1.0), and
+    Glycine max (Wm82 v2.1), all based on Ensembl Plants release 62. The
+    SQLite files are hosted on Zenodo and are retrieved on‑demand via
+    AnnotationHub, keeping the package lightweight.
+Version: 0.99.0
+Authors@R: c(
+    person("Dwijesh Chandra", "Mishra", role = "aut",
+           email = "dwij.mishra@gmail.com",
+           comment = c(ORCID = "0000-0002-3327-6156")),
+    person("Kabilan", "S", role = c("aut","cre"),
+           email = "kabilan151414@gmail.com",
+           comment = c(ORCID = "0009-0002-9422-0938")),
+    person("Sharanbasappa D", "Madival", role = "ctb",
+           email = "smadival509@gmail.com",
+           comment = c(ORCID = "0000-0002-6571-9070")),
+    person("ICAR-IARI", role = "fnd", email = "info@iari.res.in")
+  )
+Depends:
+    R (>= 4.0.0)
+Suggests:
+    knitr,
+    rmarkdown,
+    testthat,
+    BiocStyle
+Encoding: UTF-8
+VignetteBuilder: knitr
+License: Artistic-2.0
+biocViews: AnnotationData, AnnotationHub, TxDb, Arabidopsis_thaliana, 
+    Oryza_sativa, Glycine_max, SequenceAnnotation
+URL: https://github.com/kabilanbio/PlantTxDbHub
+BugReports: https://github.com/kabilanbio/PlantTxDbHub/issues
+Config/roxygen2/version: 8.0.0
