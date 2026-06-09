@@ -1,4 +1,5 @@
-#' PlantTxDbHub: AnnotationHub‑based TxDb databases for plants
+#' PlantTxDbHub: AnnotationHub‑based TxDb databases for
+#' plants
 #'
 #' @name PlantTxDbHub-package
 #' @aliases PlantTxDbHub-package PlantTxDbHub

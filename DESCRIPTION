@@ -19,12 +19,16 @@ Authors@R: c(
     person("ICAR-IARI", role = "fnd", email = "info@iari.res.in")
   )
 Depends:
-    R (>= 4.0.0)
+    R (>= 4.5.0)
+Imports:
+    AnnotationHub
 Suggests:
     knitr,
     rmarkdown,
-    testthat,
-    BiocStyle
+    testthat (>= 3.0.0),
+    BiocStyle,
+    BiocManager,
+    AnnotationHubData
 Encoding: UTF-8
 VignetteBuilder: knitr
 License: Artistic-2.0

@@ -4,7 +4,8 @@
 \name{PlantTxDbHub-package}
 \alias{PlantTxDbHub-package}
 \alias{PlantTxDbHub}
-\title{PlantTxDbHub: AnnotationHub‑based TxDb databases for plants}
+\title{PlantTxDbHub: AnnotationHub‑based TxDb databases for
+plants}
 \description{
 Provides TxDb (transcript database) annotations for three plant species: Arabidopsis thaliana (TAIR10), Oryza sativa (IRGSP‑1.0), and Glycine max (Wm82 v2.1), all based on Ensembl Plants release 62. The SQLite files are hosted on Zenodo and are retrieved on‑demand via AnnotationHub, keeping the package lightweight.
 }

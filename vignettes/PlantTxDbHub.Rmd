@@ -1,0 +1,27 @@
+---
+title: "Introduction to PlantTxDbHub"
+author: "Kabilan S"
+date: "`r Sys.Date()`"
+output: BiocStyle::html_document
+vignette: >
+  %\VignetteIndexEntry{Introduction to PlantTxDbHub}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r check, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r load}
+library(PlantTxDbHub)
+```
+
+## Session information
+
+```{r session}
+sessionInfo()
+```
