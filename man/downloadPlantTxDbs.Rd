@@ -4,23 +4,39 @@
 \alias{downloadPlantTxDbs}
 \title{Download plant TxDb SQLite files from Zenodo}
 \usage{
-downloadPlantTxDbs(dest_dir = "plant_txdb_sqlite")
+downloadPlantTxDbs(
+  dest_dir = tools::R_user_dir("PlantTxDbHub", "data"),
+  timeout = 300,
+  download = TRUE
+)
 }
 \arguments{
-\item{dest_dir}{A character string specifying the directory where the
-SQLite files should be stored. Defaults to `"plant_txdb_sqlite"` in the
-current working directory.}
+\item{dest_dir}{A character string specifying where to save the SQLite files.
+Defaults to a package-specific user data directory (see
+[tools::R_user_dir()]).}
+
+\item{timeout}{Numeric. Maximum download time in seconds per file.
+Default 300 (5 minutes).}
+
+\item{download}{Logical. If `TRUE` (default), files are actually downloaded.
+If `FALSE`, the function only prepares the directory and returns its path
+without attempting any download.}
 }
 \value{
-Invisibly returns the path to the destination directory.
+Invisibly returns the normalized path to the destination directory.
 }
 \description{
-This function downloads the three plant TxDb SQLite databases
-(Arabidopsis thaliana TAIR10, Glycine max Wm82, Oryza sativa IRGSP‑1.0)
-from the Zenodo record to a local directory.
+Downloads the three plant transcript annotation databases
+(Arabidopsis thaliana TAIR10, Glycine max Wm82, Oryza sativa IRGSP-1.0)
+from Zenodo record 20606038. Files are stored in a persistent user
+data directory and are re-downloaded automatically if corrupted.
 }
 \examples{
+# Show the path without downloading
+downloadPlantTxDbs(download = FALSE)
+
 \dontrun{
-  downloadPlantTxDbs()
+# Actual download (requires internet)
+downloadPlantTxDbs()
 }
 }

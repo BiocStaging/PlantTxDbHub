@@ -28,7 +28,12 @@ Suggests:
     testthat (>= 3.0.0),
     BiocStyle,
     BiocManager,
-    AnnotationHubData
+    AnnotationHubData,
+    RSQLite,
+    DBI,
+    curl,
+    GenomeInfoDb,
+    GenomicFeatures
 Encoding: UTF-8
 VignetteBuilder: knitr
 License: Artistic-2.0

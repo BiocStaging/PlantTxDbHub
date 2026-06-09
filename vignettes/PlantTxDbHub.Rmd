@@ -14,16 +14,19 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+
 library(PlantTxDbHub)
 library(GenomicFeatures)
 library(GenomeInfoDb)
+
+# Ensure databases are cached (downloaded only once)
+db_dir <- PlantTxDbHub::downloadPlantTxDbs()
 ```
 
 # Introduction
 
 This vignette demonstrates how to use the **PlantTxDbHub** package
-to download and analyse transcript‑level annotations for three plant
-species:
+to analyse transcript‑level annotations for three plant species:
 
 - *Arabidopsis thaliana* (TAIR10)
 - *Glycine max* (Wm82 v2.1)
@@ -31,55 +34,32 @@ species:
 
 The annotations were generated from Ensembl Plants release 62 GTF files
 and stored as standalone TxDb SQLite databases on Zenodo.  
-The package provides a helper function, `downloadPlantTxDbs()`, to obtain
-these files locally; subsequent analysis uses standard `TxDb` methods.
-
-# Download the TxDb databases
-
-The three SQLite files are hosted on Zenodo. The following code creates
-a local directory and downloads any missing databases. This step only
-needs to be done once per machine.
-
-```{r download, eval = FALSE}
-library(PlantTxDbHub)
-downloadPlantTxDbs() # downloads into "plant_txdb_sqlite/"
-```
-
-*Note*: In a future version the package will export `downloadPlantTxDbs()`
-which wraps exactly this code.
+The helper function `downloadPlantTxDbs()` caches the databases in your
+user data directory; subsequent analyses use standard `TxDb` methods.
 
 # Load a TxDb (Arabidopsis example)
 
 ```{r load_ath}
-# Point to the downloaded database
-ath_file <- file.path("plant_txdb_sqlite", "TxDb.Athaliana.TAIR10.v62.sqlite")
-if (!file.exists(ath_file)) {
-  message("File not found. Please run the download chunk first.")
-  knitr::knit_exit()
-}
+ath_file <- file.path(db_dir, "TxDb.Athaliana.TAIR10.v62.sqlite")
 txdb_ath <- loadDb(ath_file)
 txdb_ath
 ```
 
 # Available columns and keys
 
-TxDb objects work with the `select()` interface. You can discover the
-available columns and key types:
+TxDb objects work with the `select()` interface.
 
 ```{r cols}
 columns(txdb_ath)
 keytypes(txdb_ath)
 ```
 
-Common columns include `GENEID`, `TXID`, `EXONID`, `CDSID`, and
-metadata columns like `GENEBIOTYPE`, `TXBIOTYPE`, `GENEID`, etc.
-(availability depends on what was stored when the GTF was imported).
+The **column `TXTYPE`** indicates the transcript biotype (e.g. `protein_coding`).
 
 # Retrieve all genes
 
-`genes()` returns a `GRanges` with gene‑level information. The metadata
-columns depend on how the TxDb was constructed; for these GTF‑based
-databases you will typically see `gene_id` and `gene_biotype`.
+`genes()` returns a `GRanges` with gene‑level information.  
+Here the database provides the `gene_id` as the only metadata column.
 
 ```{r genes_ath}
 gene_gr <- genes(txdb_ath)
@@ -89,7 +69,7 @@ head(gene_gr)
 # Retrieve all transcripts
 
 ```{r transcripts_ath}
-tx_gr <- transcripts(txdb_ath, columns = c("tx_name", "gene_id", "tx_biotype"))
+tx_gr <- transcripts(txdb_ath)
 head(tx_gr)
 ```
 
@@ -102,41 +82,39 @@ head(ex_gr)
 
 # Filter by gene ID
 
-Use `select()` to retrieve specific genes by their `GENEID`.  
-Alternatively, subset the `GRanges` directly using the `gene_id` column.
+You can retrieve gene ranges using `filter`:
 
 ```{r filter_geneid}
-# Get the GRanges for a single gene
 my_genes <- c("AT1G01010", "AT1G01020")
 genes(txdb_ath, filter = list(gene_id = my_genes))
 ```
 
-If the `filter` argument is not supported (older `GenomicFeatures`
-versions), fall back to `select()`:
+If `filter` is not available (older `GenomicFeatures`), fall back to
+`select()`:
 
 ```{r filter_geneid_select}
-# Retrieve gene ranges + metadata
 sel <- select(txdb_ath,
-              keys = my_genes,
-              columns = c("GENEID", "TXID", "TXBIOTYPE", "EXONID"),
-              keytype = "GENEID")
+  keys = my_genes,
+  columns = c("GENEID", "TXID", "TXTYPE", "EXONID"),
+  keytype = "GENEID"
+)
 head(sel)
 ```
 
-# Filter by gene biotype (e.g., protein‑coding)
+This returns a 1:many mapping between genes and their transcripts/exons.
 
-```{r filter_biotype}
-# Extract all gene IDs with gene_biotype "protein_coding"
-gene_md <- select(txdb_ath,
-                  keys = keys(txdb_ath, "GENEID"),
-                  columns = c("GENEID", "GENEBIOTYPE"),
-                  keytype = "GENEID")
-pc_ids <- gene_md$GENEID[gene_md$GENEBIOTYPE == "protein_coding"]
+# Retrieving transcript types
 
-# Subset the gene GRanges
-pc_genes <- gene_gr[gene_gr$gene_id %in% pc_ids]
-length(pc_genes)
-head(pc_genes)
+The column `TXTYPE` holds the transcript biotype (e.g. `protein_coding`).
+You can extract it for all transcripts with `select()`:
+
+```{r txtype}
+tx_info <- select(txdb_ath,
+  keys = keys(txdb_ath, "TXID"),
+  columns = c("TXID", "TXTYPE"),
+  keytype = "TXID"
+)
+table(tx_info$TXTYPE)
 ```
 
 # Working with chromosome names
@@ -147,41 +125,27 @@ and organelle names as `Mt`, `Pt`. To add the standard *Arabidopsis*
 
 ```{r chrom_ath}
 gene_gr_nuc <- keepSeqlevels(gene_gr,
-                             value = c("1", "2", "3", "4", "5"),
-                             pruning.mode = "coarse")
+  value = c("1", "2", "3", "4", "5"),
+  pruning.mode = "coarse"
+)
 seqlevels(gene_gr_nuc) <- paste0("Chr", seqlevels(gene_gr_nuc))
 seqlevels(gene_gr_nuc)
 ```
 
 # Soybean (*Glycine max*) example
 
-The workflow is identical. The chromosome names in soybean are
-`Gm01`, `Gm02`, …, `Gm20` (depending on the GTF). We show a quick
-overview.
-
 ```{r load_gmx}
-gmx_file <- file.path("plant_txdb_sqlite", "TxDb.Gmax.Wm82.v62.sqlite")
-if (!file.exists(gmx_file)) {
-  message("File not found. Run download chunk first.")
-} else {
-  txdb_gmx <- loadDb(gmx_file)
-  head(genes(txdb_gmx))
-  # List chromosome names
-  seqlevels(txdb_gmx)[1:5]
-}
+gmx_file <- file.path(db_dir, "TxDb.Gmax.Wm82.v62.sqlite")
+txdb_gmx <- loadDb(gmx_file)
+head(genes(txdb_gmx))
 ```
 
 # Rice (*Oryza sativa*) example
 
 ```{r load_osa}
-osa_file <- file.path("plant_txdb_sqlite", "TxDb.Osativa.IRGSP.v62.sqlite")
-if (!file.exists(osa_file)) {
-  message("File not found. Run download chunk first.")
-} else {
-  txdb_osa <- loadDb(osa_file)
-  head(genes(txdb_osa))
-  seqlevels(txdb_osa)[1:5]
-}
+osa_file <- file.path(db_dir, "TxDb.Osativa.IRGSP.v62.sqlite")
+txdb_osa <- loadDb(osa_file)
+head(genes(txdb_osa))
 ```
 
 # Session information
@@ -189,3 +153,4 @@ if (!file.exists(osa_file)) {
 ```{r sessionInfo}
 sessionInfo()
 ```
+
