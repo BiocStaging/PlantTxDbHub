@@ -9,3 +9,4 @@
 *.Rproj
 /doc/
 /Meta/
+/*_sqlite/
