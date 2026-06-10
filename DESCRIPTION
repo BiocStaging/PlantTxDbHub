@@ -5,7 +5,7 @@ Description: Provides TxDb (transcript database) annotations for three plant
     Glycine max (Wm82 v2.1), all based on Ensembl Plants release 62. The
     SQLite files are hosted on Zenodo and are retrieved on‑demand via
     AnnotationHub, keeping the package lightweight.
-Version: 0.99.0
+Version: 0.99.1
 Authors@R: c(
     person("Dwijesh Chandra", "Mishra", role = "aut",
            email = "dwij.mishra@gmail.com",
