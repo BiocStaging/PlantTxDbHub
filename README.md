@@ -20,11 +20,7 @@ Currently included species:
 
 ```r
 if (!require("remotes", quietly = TRUE))
-<<<<<<< HEAD
     install.packages("remotes")
-=======
-  install.packages("remotes")
->>>>>>> 73db15f12308196d82e383c15b1bf8107add4552
 remotes::install_github("kabilanbio/PlantTxDbHub")
 ```
 
