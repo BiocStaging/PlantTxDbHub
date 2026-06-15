@@ -19,7 +19,7 @@ library(PlantTxDbHub)
 library(GenomicFeatures)
 library(GenomeInfoDb)
 
-# Download all databases from their source URLs (as defined in inst/extdata/metadata.csv)
+# Download all available databases
 db_dir <- downloadPlantTxDbs()
 ```
 
@@ -37,30 +37,27 @@ remotes::install_github("kabilanbio/PlantTxDbHub")
 
 **PlantTxDbHub** provides ready‑to‑use TxDb (transcript database) annotations
 for plant genomes. The databases are stored as SQLite files and can be
-downloaded on demand using the package's `downloadPlantTxDbs()` function.
-The list of available species and their download URLs is maintained in a
-curated CSV file (`inst/extdata/metadata.csv`). This design makes it easy
-for the community to add new species without modifying any R code.
+downloaded on demand using `downloadPlantTxDbs()`.  
+The available species and their download URLs are maintained in a curated
+CSV file (`inst/extdata/metadata.csv`). This design allows the community to
+add new species without modifying any R code.
 
 # Finding available species
 
-Use `listPlantTxDbSpecies()` to see the available species identifiers and
-their corresponding SQLite file names:
+Use `listPlantTxDbSpecies()` to see the species identifiers and their
+corresponding SQLite file names:
 
 ```{r list_species}
 listPlantTxDbSpecies()
 ```
 
-The `SpeciesID` column contains the identifiers you can pass to
-`downloadPlantTxDbs()`.
-
 # Downloading the databases
 
-`downloadPlantTxDbs()` reads the metadata CSV and downloads each SQLite
-file from its respective URL. By default it fetches **all** available
-databases; you can also request a subset.
+`downloadPlantTxDbs()` reads the metadata CSV and downloads each SQLite file
+from its unique URL. By default it fetches **all** databases; you can also
+request a subset.
 
-**Download all databases** (already called in the setup chunk):
+**Download all databases** (already done in the setup chunk):
 
 ```{r download_all, eval = FALSE}
 downloadPlantTxDbs()
@@ -76,15 +73,16 @@ downloadPlantTxDbs(species = "Arabidopsis_TAIR10")
 downloadPlantTxDbs(species = c("Arabidopsis_TAIR10", "Oryza_IRGSP_1"))
 ```
 
-The files are cached in a persistent user data directory, so subsequent
-calls are instantaneous unless a file is corrupted.
+The files are cached in a persistent user data directory, so subsequent calls
+are instantaneous unless a file is corrupted.
 
 # Loading a TxDb (Arabidopsis example)
 
-Once downloaded, load a TxDb with `GenomicFeatures::loadDb()`:
+Once downloaded, you can obtain the full path to a cached file with
+`getTxDbPath()`, then load it with `GenomicFeatures::loadDb()`:
 
 ```{r load_ath}
-ath_file <- file.path(db_dir, "TxDb.Athaliana.TAIR10.v62.sqlite")
+ath_file <- getTxDbPath("Arabidopsis_TAIR10")
 txdb_ath <- loadDb(ath_file)
 txdb_ath
 ```
@@ -98,7 +96,7 @@ columns(txdb_ath)
 keytypes(txdb_ath)
 ```
 
-The column `TXTYPE` indicates the transcript biotype (e.g. `protein_coding`).
+The column **`TXTYPE`** indicates the transcript biotype (e.g. `protein_coding`).
 
 # Retrieve all genes
 
@@ -125,22 +123,9 @@ head(ex_gr)
 
 # Filter by gene ID
 
-You can filter gene ranges directly:
-
 ```{r filter_geneid}
 my_genes <- c("AT1G01010", "AT1G01020")
 genes(txdb_ath, filter = list(gene_id = my_genes))
-```
-
-Or fall back to `select()` for older GenomicFeatures versions:
-
-```{r filter_geneid_select}
-sel <- select(txdb_ath,
-  keys = my_genes,
-  columns = c("GENEID", "TXID", "TXTYPE", "EXONID"),
-  keytype = "GENEID"
-)
-head(sel)
 ```
 
 # Retrieving transcript types
@@ -156,9 +141,6 @@ table(tx_info$TXTYPE)
 
 # Working with chromosome names
 
-To add the standard *Arabidopsis* `Chr` prefix and keep only nuclear
-chromosomes:
-
 ```{r chrom_ath}
 gene_gr_nuc <- keepSeqlevels(gene_gr,
   value = c("1", "2", "3", "4", "5"),
@@ -171,7 +153,7 @@ seqlevels(gene_gr_nuc)
 # Soybean (*Glycine max*) example
 
 ```{r load_gmx}
-gmx_file <- file.path(db_dir, "TxDb.Gmax.Wm82.v62.sqlite")
+gmx_file <- getTxDbPath("Glycine_Gmax_v2.1")
 txdb_gmx <- loadDb(gmx_file)
 head(genes(txdb_gmx))
 ```
@@ -179,7 +161,7 @@ head(genes(txdb_gmx))
 # Rice (*Oryza sativa*) example
 
 ```{r load_osa}
-osa_file <- file.path(db_dir, "TxDb.Osativa.IRGSP.v62.sqlite")
+osa_file <- getTxDbPath("Oryza_IRGSP_1")
 txdb_osa <- loadDb(osa_file)
 head(genes(txdb_osa))
 ```
@@ -190,7 +172,7 @@ We welcome the addition of TxDb databases for other plant species.
 To contribute:
 
 1. **Host the SQLite file** on a permanent, publicly accessible URL
-   (e.g. your own Zenodo record).
+   (e.g., your own Zenodo record).
 2. **Fork** the package repository and edit the file
    `inst/extdata/metadata.csv`.
 3. **Add a new row** containing:
@@ -212,3 +194,4 @@ information directly from `metadata.csv`.
 ```{r sessionInfo}
 sessionInfo()
 ```
+

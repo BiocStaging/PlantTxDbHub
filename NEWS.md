@@ -1,3 +1,9 @@
+# PlantTxDbHub 0.99.3
+
+- Added `getTxDbPath()` to retrieve the local file path of a cached TxDb
+  database for a given species identifier. This simplifies loading with
+  `GenomicFeatures::loadDb()`.
+
 # PlantTxDbHub 0.99.2
 
 ## BREAKING CHANGES

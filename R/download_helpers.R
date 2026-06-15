@@ -28,6 +28,30 @@ listPlantTxDbSpecies <- function() {
   )
 }
 
+#' Get the local path to a cached TxDb SQLite file
+#'
+#' Returns the full file path to a previously downloaded TxDb database.
+#' If the file does not exist, the function stops with an error.
+#'
+#' @param species Character string. A species identifier as returned by
+#'   [listPlantTxDbSpecies()] (e.g., `"Arabidopsis_TAIR10"`).
+#' @param dest_dir Character string. The directory where the SQLite files
+#'   are stored. Defaults to the same cache used by [downloadPlantTxDbs()].
+#'
+#' @return Character string giving the complete file path.
+#' @export
+#'
+#' @examples
+#' getTxDbPath("Arabidopsis_TAIR10")
+getTxDbPath <- function(species, dest_dir = tools::R_user_dir("PlantTxDbHub", "data")) {
+  md <- listPlantTxDbSpecies()
+  if (!species %in% md$SpeciesID) {
+    stop("Invalid species. Choose from: ", paste(md$SpeciesID, collapse = ", "))
+  }
+  filename <- md$Filename[md$SpeciesID == species]
+  file.path(dest_dir, filename)
+}
+
 #' Download plant TxDb SQLite files from Zenodo (or other sources)
 #'
 #' Downloads plant transcript annotation databases based on the internal
