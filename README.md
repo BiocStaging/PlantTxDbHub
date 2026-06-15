@@ -12,6 +12,7 @@
 ## Installation
 
 ```r
-install.packages("remotes")
+if (!require("remotes", quietly = TRUE))
+  install.packages("remotes")
 remotes::install_github("kabilanbio/PlantTxDbHub")
 ```
