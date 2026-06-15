@@ -1,6 +1,6 @@
 Package: PlantTxDbHub
 Title: Transcript Database Hub for Plant Genomes
-Version: 0.99.3
+Version: 0.99.4
 Authors@R: c(
     person("Dwijesh Chandra", "Mishra", role = "aut",
            email = "dwij.mishra@gmail.com",

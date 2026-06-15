@@ -1,3 +1,7 @@
+# PlantTxDbHub 0.99.4
+
+- Added Phytozome genome TxDb file of _Glycine max_ (Glycine max Wm82.a4.v1).
+
 # PlantTxDbHub 0.99.3
 
 - Added `getTxDbPath()` to retrieve the local file path of a cached TxDb
