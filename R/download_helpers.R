@@ -1,18 +1,52 @@
-#' Download plant TxDb SQLite files from Zenodo
+# Internal helper – reads the master metadata CSV
+.read_metadata <- function() {
+  read.csv(
+    system.file("extdata", "metadata.csv", package = "PlantTxDbHub"),
+    stringsAsFactors = FALSE
+  )
+}
+
+#' List available plant TxDb species
 #'
-#' Downloads the three plant transcript annotation databases
-#' (Arabidopsis thaliana TAIR10, Glycine max Wm82, Oryza sativa IRGSP-1.0)
-#' from Zenodo record 20606038. Files are stored in a persistent user
-#' data directory and are re-downloaded automatically if corrupted.
+#' Reads the internal metadata table (`inst/extdata/metadata.csv`) and
+#' returns a concise list of available species identifiers and their
+#' corresponding SQLite file names.
+#'
+#' @return A `data.frame` with columns `SpeciesID` (unique identifier used
+#'   for download) and `Filename` (SQLite file name).
+#' @export
+#' @importFrom utils read.csv
+#' @examples
+#' listPlantTxDbSpecies()
+listPlantTxDbSpecies <- function() {
+  md <- .read_metadata()
+  # The Title column currently holds the filename; adjust if your CSV uses a different column.
+  data.frame(
+    SpeciesID = md$SpeciesID,
+    Filename  = md$Title,
+    stringsAsFactors = FALSE
+  )
+}
+
+#' Download plant TxDb SQLite files from Zenodo (or other sources)
+#'
+#' Downloads plant transcript annotation databases based on the internal
+#' metadata file `inst/extdata/metadata.csv`. Each file can reside on a
+#' different server; the download URL is constructed from the
+#' `Location_Prefix` and `RDataPath` columns.
 #'
 #' @param dest_dir A character string specifying where to save the SQLite files.
-#'   Defaults to a package-specific user data directory (see
+#'   Defaults to a package‑specific user data directory (see
 #'   [tools::R_user_dir()]).
 #' @param timeout Numeric. Maximum download time in seconds per file.
 #'   Default 300 (5 minutes).
 #' @param download Logical. If `TRUE` (default), files are actually downloaded.
 #'   If `FALSE`, the function only prepares the directory and returns its path
 #'   without attempting any download.
+#' @param species Character vector. Which species to download. Choose from
+#'   the `SpeciesID` values returned by [listPlantTxDbSpecies()], e.g.
+#'   `"Arabidopsis_TAIR10"`. Default is `NULL`, downloading all available
+#'   databases.
 #'
 #' @return Invisibly returns the normalized path to the destination directory.
 #' @export
@@ -23,18 +57,28 @@
 #' downloadPlantTxDbs(download = FALSE)
 #'
 #' \donttest{
-#' # Actual download (requires internet)
+#' # Download only the Arabidopsis database
+#' downloadPlantTxDbs(species = "Arabidopsis_TAIR10")
+#'
+#' # Download all three databases
 #' downloadPlantTxDbs()
 #' }
 downloadPlantTxDbs <- function(dest_dir = tools::R_user_dir("PlantTxDbHub", "data"),
-                               timeout = 300,
-                               download = TRUE) {
-  base_url <- "https://zenodo.org/record/20606038/files"
-  files <- c(
-    "TxDb.Athaliana.TAIR10.v62.sqlite",
-    "TxDb.Gmax.Wm82.v62.sqlite",
-    "TxDb.Osativa.IRGSP.v62.sqlite"
-  )
+                               timeout = 30000,
+                               download = TRUE,
+                               species = NULL) {
+  md <- .read_metadata()
+
+  # Filter by species if requested
+  if (!is.null(species) && !isTRUE(species)) {
+    species <- match.arg(species, choices = md$SpeciesID, several.ok = TRUE)
+    md <- md[md$SpeciesID %in% species, ]
+  }
+
+  if (nrow(md) == 0) {
+    stop("No valid species selected. Available SpeciesIDs: ",
+         paste(md$SpeciesID, collapse = ", "))
+  }
 
   if (!dir.exists(dest_dir)) {
     ok <- dir.create(dest_dir, showWarnings = FALSE, recursive = TRUE)
@@ -45,15 +89,17 @@ downloadPlantTxDbs <- function(dest_dir = tools::R_user_dir("PlantTxDbHub", "dat
   }
 
   if (download) {
-    for (f in files) {
+    for (i in seq_len(nrow(md))) {
+      f <- md$Title[i]                     # filename, e.g. "TxDb.Athaliana.TAIR10.v62.sqlite"
+      url <- paste0(md$Location_Prefix[i], md$RDataPath[i])
       dest <- file.path(dest_dir, f)
+
       if (!file.exists(dest) || !is_valid_sqlite(dest)) {
         if (file.exists(dest)) {
           message("File '", f, "' appears corrupted. Re-downloading...")
           unlink(dest)
         }
         message("Downloading: ", f)
-        url <- paste0(base_url, "/", f, "?download=1")
 
         if (requireNamespace("curl", quietly = TRUE)) {
           curl::curl_download(url, dest, mode = "wb", quiet = FALSE,
