@@ -119,7 +119,7 @@ The remaining sections of this vignette require a successful download; they
 are skipped if the network was unavailable during vignette build.
 
 ```{r load_ath, eval = data_available}
-ath_file <- getTxDbPath("Arabidopsis_TAIR10", dest_dir = db_dir)
+ath_file <- getTxDbPath("Arabidopsis_TAIR10")
 txdb_ath <- loadDb(ath_file)
 txdb_ath
 ```
@@ -194,7 +194,7 @@ Plants) and `Glycine_Wm82.a4.v1` (Phytozome). This example uses the Ensembl
 Plants build.
 
 ```{r load_gmx, eval = data_available}
-gmx_file <- getTxDbPath("Glycine_Gmax_v2.1", dest_dir = db_dir)
+gmx_file <- getTxDbPath("Glycine_Gmax_v2.1")
 txdb_gmx <- loadDb(gmx_file)
 head(genes(txdb_gmx))
 ```
@@ -202,7 +202,7 @@ head(genes(txdb_gmx))
 # Rice (*Oryza sativa*) example
 
 ```{r load_osa, eval = data_available}
-osa_file <- getTxDbPath("Oryza_IRGSP_1", dest_dir = db_dir)
+osa_file <- getTxDbPath("Oryza_IRGSP_1")
 txdb_osa <- loadDb(osa_file)
 head(genes(txdb_osa))
 ```
