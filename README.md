@@ -18,8 +18,18 @@ Currently included species:
 
 ## Installation
 
+Install from Bioconductor:
+
 ```r
-if (!require("remotes", quietly = TRUE))
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("PlantTxDbHub")
+```
+
+To install the developer version from GitHub:
+
+```r
+if (!requireNamespace("remotes", quietly = TRUE))
     install.packages("remotes")
 remotes::install_github("kabilanbio/PlantTxDbHub")
 ```
@@ -62,4 +72,3 @@ instructions. In short:
    - `Location_Prefix` and `RDataPath` – the two parts of the download URL
    - Other metadata columns (see existing rows)
 3. Submit a pull request. No R code changes needed!
-
