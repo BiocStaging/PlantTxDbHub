@@ -7,13 +7,12 @@
 listPlantTxDbSpecies()
 }
 \value{
-A `data.frame` with columns `SpeciesID` (unique identifier used
-  for download) and `Filename` (SQLite file name).
+A `data.frame` with columns `SpeciesID`, `Species`, `Genome`,
+  `SourceVersion`, `DataProvider`, `Filename`, and `Description`.
 }
 \description{
 Reads the internal metadata table (`inst/extdata/metadata.csv`) and
-returns a concise list of available species identifiers and their
-corresponding SQLite file names.
+returns a data.frame of available species and their annotation metadata.
 }
 \examples{
 listPlantTxDbSpecies()

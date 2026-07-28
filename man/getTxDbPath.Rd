@@ -18,7 +18,7 @@ Character string giving the complete file path.
 }
 \description{
 Returns the full file path to a previously downloaded TxDb database.
-If the file does not exist, the function stops with an error.
+If the file does not exist in the cache, the function stops with an error.
 }
 \examples{
 getTxDbPath("Arabidopsis_TAIR10")

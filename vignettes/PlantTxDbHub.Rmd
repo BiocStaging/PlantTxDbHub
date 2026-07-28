@@ -19,15 +19,47 @@ library(PlantTxDbHub)
 library(GenomicFeatures)
 library(GenomeInfoDb)
 
-# Download all available databases
-db_dir <- downloadPlantTxDbs()
+# Only download the species actually used later in this vignette, and do
+# so defensively: a vignette must not hard-fail if the network is
+# unavailable during package build/check (see Bioconductor "Querying Web
+# Resources" guideline).
+species_used <- c("Arabidopsis_TAIR10", "Glycine_Gmax_v2.1", "Oryza_IRGSP_1")
+
+db_dir <- tryCatch(
+  downloadPlantTxDbs(species = species_used),
+  error = function(e) {
+    message("Could not download TxDb files: ", conditionMessage(e))
+    NA
+  }
+)
+
+data_available <- !is.na(db_dir) &&
+  all(vapply(species_used, function(sp) {
+    file.exists(tryCatch(getTxDbPath(sp, dest_dir = db_dir),
+      error = function(e) NA_character_
+    ))
+  }, logical(1)))
 ```
 
 # Installation
 
-Install the development version from GitHub:
+## Install from Bioconductor
 
-```{r install, eval = FALSE}
+Once **PlantTxDbHub** is accepted into Bioconductor, install it with:
+
+```{r install_bioconductor, eval = FALSE}
+if (!require("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+}
+BiocManager::install("PlantTxDbHub")
+```
+
+## Install the development version from GitHub
+
+While the package is under Bioconductor review, install the development
+version directly from GitHub:
+
+```r
 if (!require("remotes", quietly = TRUE))
     install.packages("remotes")
 remotes::install_github("kabilanbio/PlantTxDbHub")
@@ -37,15 +69,16 @@ remotes::install_github("kabilanbio/PlantTxDbHub")
 
 **PlantTxDbHub** provides ready‑to‑use TxDb (transcript database) annotations
 for plant genomes. The databases are stored as SQLite files and can be
-downloaded on demand using `downloadPlantTxDbs()`.  
+downloaded on demand using `downloadPlantTxDbs()`.
 The available species and their download URLs are maintained in a curated
 CSV file (`inst/extdata/metadata.csv`). This design allows the community to
 add new species without modifying any R code.
 
 # Finding available species
 
-Use `listPlantTxDbSpecies()` to see the species identifiers and their
-corresponding SQLite file names:
+Use `listPlantTxDbSpecies()` to see the available species and their
+associated metadata (species name, genome build, source version, data
+provider, filename, and description):
 
 ```{r list_species}
 listPlantTxDbSpecies()
@@ -54,16 +87,16 @@ listPlantTxDbSpecies()
 # Downloading the databases
 
 `downloadPlantTxDbs()` reads the metadata CSV and downloads each SQLite file
-from its unique URL. By default it fetches **all** databases; you can also
-request a subset.
+from its unique URL, caching it via `BiocFileCache`. By default it fetches
+**all** available databases; you can also request a subset by `SpeciesID`.
 
-**Download all databases** (already done in the setup chunk):
+**Download all databases:**
 
 ```{r download_all, eval = FALSE}
 downloadPlantTxDbs()
 ```
 
-**Download only specific species:**
+**Download only specific species** (as done in the setup chunk above):
 
 ```{r download_single, eval = FALSE}
 # Only Arabidopsis
@@ -73,16 +106,20 @@ downloadPlantTxDbs(species = "Arabidopsis_TAIR10")
 downloadPlantTxDbs(species = c("Arabidopsis_TAIR10", "Oryza_IRGSP_1"))
 ```
 
-The files are cached in a persistent user data directory, so subsequent calls
-are instantaneous unless a file is corrupted.
+Files are cached in a persistent user data directory via `BiocFileCache`, so
+subsequent calls are fast and corrupted files are re-downloaded
+automatically.
 
 # Loading a TxDb (Arabidopsis example)
 
-Once downloaded, you can obtain the full path to a cached file with
-`getTxDbPath()`, then load it with `GenomicFeatures::loadDb()`:
+Once downloaded, obtain the full path to a cached file with
+`getTxDbPath()`, then load it with `GenomicFeatures::loadDb()`.
 
-```{r load_ath}
-ath_file <- getTxDbPath("Arabidopsis_TAIR10")
+The remaining sections of this vignette require a successful download; they
+are skipped if the network was unavailable during vignette build.
+
+```{r load_ath, eval = data_available}
+ath_file <- getTxDbPath("Arabidopsis_TAIR10", dest_dir = db_dir)
 txdb_ath <- loadDb(ath_file)
 txdb_ath
 ```
@@ -91,7 +128,7 @@ txdb_ath
 
 TxDb objects support the `select()` interface.
 
-```{r cols}
+```{r cols, eval = data_available}
 columns(txdb_ath)
 keytypes(txdb_ath)
 ```
@@ -102,35 +139,35 @@ The column **`TXTYPE`** indicates the transcript biotype (e.g. `protein_coding`)
 
 `genes()` returns a `GRanges` with gene‑level information.
 
-```{r genes_ath}
+```{r genes_ath, eval = data_available}
 gene_gr <- genes(txdb_ath)
 head(gene_gr)
 ```
 
 # Retrieve all transcripts
 
-```{r transcripts_ath}
+```{r transcripts_ath, eval = data_available}
 tx_gr <- transcripts(txdb_ath)
 head(tx_gr)
 ```
 
 # Retrieve all exons
 
-```{r exons_ath}
+```{r exons_ath, eval = data_available}
 ex_gr <- exons(txdb_ath, columns = "exon_id")
 head(ex_gr)
 ```
 
 # Filter by gene ID
 
-```{r filter_geneid}
+```{r filter_geneid, eval = data_available}
 my_genes <- c("AT1G01010", "AT1G01020")
 genes(txdb_ath, filter = list(gene_id = my_genes))
 ```
 
 # Retrieving transcript types
 
-```{r txtype}
+```{r txtype, eval = data_available}
 tx_info <- select(txdb_ath,
   keys = keys(txdb_ath, "TXID"),
   columns = c("TXID", "TXTYPE"),
@@ -141,7 +178,7 @@ table(tx_info$TXTYPE)
 
 # Working with chromosome names
 
-```{r chrom_ath}
+```{r chrom_ath, eval = data_available}
 gene_gr_nuc <- keepSeqlevels(gene_gr,
   value = c("1", "2", "3", "4", "5"),
   pruning.mode = "coarse"
@@ -152,16 +189,20 @@ seqlevels(gene_gr_nuc)
 
 # Soybean (*Glycine max*) example
 
-```{r load_gmx}
-gmx_file <- getTxDbPath("Glycine_Gmax_v2.1")
+Two soybean genome builds are available: `Glycine_Gmax_v2.1` (Ensembl
+Plants) and `Glycine_Wm82.a4.v1` (Phytozome). This example uses the Ensembl
+Plants build.
+
+```{r load_gmx, eval = data_available}
+gmx_file <- getTxDbPath("Glycine_Gmax_v2.1", dest_dir = db_dir)
 txdb_gmx <- loadDb(gmx_file)
 head(genes(txdb_gmx))
 ```
 
 # Rice (*Oryza sativa*) example
 
-```{r load_osa}
-osa_file <- getTxDbPath("Oryza_IRGSP_1")
+```{r load_osa, eval = data_available}
+osa_file <- getTxDbPath("Oryza_IRGSP_1", dest_dir = db_dir)
 txdb_osa <- loadDb(osa_file)
 head(genes(txdb_osa))
 ```
@@ -180,7 +221,8 @@ To contribute:
    - `Title` – the exact filename of the SQLite file.
    - `Location_Prefix` and `RDataPath` – the two parts of the download URL
      (they will be concatenated to form the full link).
-   - Other columns as appropriate (Description, Genome, Species, etc.).
+   - Other columns as appropriate (`Description`, `Genome`, `Species`,
+     `DataProvider`, etc.).
    Follow the existing rows for guidance.
 4. **Submit a pull request** with your changes. Once merged and a new
    version of the package is released, the new species will be instantly
@@ -189,9 +231,14 @@ To contribute:
 No R code changes are required – the package reads all necessary
 information directly from `metadata.csv`.
 
+# Data sources and licensing
+
+TxDb resources in this package are derived from Ensembl Plants and
+Phytozome annotation data; see `?PlantTxDbHub` for full licensing details
+and `getTxDbProvenance()` to query provenance per species.
+
 # Session information
 
 ```{r sessionInfo}
 sessionInfo()
 ```
-

@@ -19,18 +19,18 @@ Description: Provides TxDb (transcript database) annotations for
     easily add new databases without modifying R code.
 Depends:
     R (>= 4.5.0)
-Imports:  
-    BiocFileCache  
-Suggests:  
-    knitr,  
-    rmarkdown,  
-    testthat (>= 3.0.0),  
-    BiocStyle,  
-    BiocManager,  
-    RSQLite,  
-    DBI,  
-    GenomeInfoDb,  
-    GenomicFeatures 
+Imports:
+    BiocFileCache
+Suggests:
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    BiocStyle,
+    BiocManager,
+    RSQLite,
+    DBI,
+    GenomeInfoDb,
+    GenomicFeatures
 Encoding: UTF-8
 VignetteBuilder: knitr
 License: Artistic-2.0

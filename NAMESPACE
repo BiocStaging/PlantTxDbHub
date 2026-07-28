@@ -2,6 +2,7 @@
 
 export(downloadPlantTxDbs)
 export(getTxDbPath)
+export(getTxDbProvenance)
 export(listPlantTxDbSpecies)
 importFrom(BiocFileCache,BiocFileCache)
 importFrom(BiocFileCache,bfcadd)

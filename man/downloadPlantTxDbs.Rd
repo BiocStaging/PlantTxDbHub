@@ -12,17 +12,16 @@ downloadPlantTxDbs(
 )
 }
 \arguments{
-\item{dest_dir}{A character string specifying the BiocFileCache location.
-Defaults to a package‑specific user data directory (see
+\item{dest_dir}{A character string specifying the BiocFileCache directory.
+Defaults to a package-specific user data directory (see
 [tools::R_user_dir()]).}
 
 \item{timeout}{Numeric. Maximum download time in seconds per file.
-Default 1800 (30 minutes). Passed to the underlying download mechanism
-via [options("timeout")].}
+Default 1800 (30 minutes).}
 
 \item{download}{Logical. If `TRUE` (default), files are actually downloaded.
-If `FALSE`, the function only prepares the cache directory and returns its
-path without attempting any download.}
+If `FALSE`, the function only prepares the cache directory and returns its path
+without attempting any download.}
 
 \item{species}{Character vector. Which species to download. Choose from
 the `SpeciesID` values returned by [listPlantTxDbSpecies()], e.g.
@@ -39,7 +38,10 @@ different server; the download URL is constructed from the
 `Location_Prefix` and `RDataPath` columns.
 }
 \details{
-Files are cached using \pkg{BiocFileCache}.
+The downloaded SQLite files are derived from publicly available genome
+annotations. See \code{\link{PlantTxDbHub-package}} for data-provider
+licensing and provenance details, and \code{\link{getTxDbProvenance}}
+to query provenance per species.
 }
 \examples{
 # Show the cache path without downloading

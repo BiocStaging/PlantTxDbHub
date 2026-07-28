@@ -9,21 +9,24 @@
 #' List available plant TxDb species
 #'
 #' Reads the internal metadata table (`inst/extdata/metadata.csv`) and
-#' returns a concise list of available species identifiers and their
-#' corresponding SQLite file names.
+#' returns a data.frame of available species and their annotation metadata.
 #'
-#' @return A `data.frame` with columns `SpeciesID` (unique identifier used
-#'   for download) and `Filename` (SQLite file name).
+#' @return A `data.frame` with columns `SpeciesID`, `Species`, `Genome`,
+#'   `SourceVersion`, `DataProvider`, `Filename`, and `Description`.
 #' @export
 #' @importFrom utils read.csv
 #' @examples
 #' listPlantTxDbSpecies()
 listPlantTxDbSpecies <- function() {
   md <- .read_metadata()
-  # The Title column currently holds the filename; adjust if your CSV uses a different column.
   data.frame(
     SpeciesID = md$SpeciesID,
-    Filename  = md$Title,
+    Species = md$Species,
+    Genome = md$Genome,
+    SourceVersion = md$SourceVersion,
+    DataProvider = md$DataProvider,
+    Filename = md$Title,
+    Description = md$Description,
     stringsAsFactors = FALSE
   )
 }
@@ -31,7 +34,7 @@ listPlantTxDbSpecies <- function() {
 #' Get the local path to a cached TxDb SQLite file
 #'
 #' Returns the full file path to a previously downloaded TxDb database.
-#' If the file does not exist, the function stops with an error.
+#' If the file does not exist in the cache, the function stops with an error.
 #'
 #' @param species Character string. A species identifier as returned by
 #'   [listPlantTxDbSpecies()] (e.g., `"Arabidopsis_TAIR10"`).
@@ -40,7 +43,7 @@ listPlantTxDbSpecies <- function() {
 #'
 #' @return Character string giving the complete file path.
 #' @export
-#'
+#' @importFrom BiocFileCache BiocFileCache bfcquery bfcrpath
 #' @examples
 #' getTxDbPath("Arabidopsis_TAIR10")
 getTxDbPath <- function(species, dest_dir = tools::R_user_dir("PlantTxDbHub", "data")) {
@@ -63,26 +66,28 @@ getTxDbPath <- function(species, dest_dir = tools::R_user_dir("PlantTxDbHub", "d
 #' different server; the download URL is constructed from the
 #' `Location_Prefix` and `RDataPath` columns.
 #'
-#' Files are cached using \pkg{BiocFileCache}.
-#'
-#' @param dest_dir A character string specifying the BiocFileCache location.
-#'   Defaults to a package‑specific user data directory (see
+#' @param dest_dir A character string specifying the BiocFileCache directory.
+#'   Defaults to a package-specific user data directory (see
 #'   [tools::R_user_dir()]).
 #' @param timeout Numeric. Maximum download time in seconds per file.
-#'   Default 1800 (30 minutes). Passed to the underlying download mechanism
-#'   via [options("timeout")].
+#'   Default 1800 (30 minutes).
 #' @param download Logical. If `TRUE` (default), files are actually downloaded.
-#'   If `FALSE`, the function only prepares the cache directory and returns its
-#'   path without attempting any download.
+#'   If `FALSE`, the function only prepares the cache directory and returns its path
+#'   without attempting any download.
 #' @param species Character vector. Which species to download. Choose from
 #'   the `SpeciesID` values returned by [listPlantTxDbSpecies()], e.g.
 #'   `"Arabidopsis_TAIR10"`. Default is `NULL`, downloading all available
 #'   databases.
 #'
+#' @details
+#' The downloaded SQLite files are derived from publicly available genome
+#' annotations. See \code{\link{PlantTxDbHub-package}} for data-provider
+#' licensing and provenance details, and \code{\link{getTxDbProvenance}}
+#' to query provenance per species.
+#'
 #' @return Invisibly returns the BiocFileCache directory path.
 #' @export
-#' @importFrom BiocFileCache BiocFileCache bfcadd bfcquery bfccache bfcdownload bfcrpath
-#'
+#' @importFrom BiocFileCache BiocFileCache bfcadd bfcquery bfcrpath bfcdownload bfccache
 #' @examples
 #' # Show the cache path without downloading
 #' downloadPlantTxDbs(download = FALSE)
@@ -101,20 +106,29 @@ downloadPlantTxDbs <- function(dest_dir = tools::R_user_dir("PlantTxDbHub", "dat
   md <- .read_metadata()
 
   if (!is.null(species) && !isTRUE(species)) {
+    invalid <- setdiff(species, md$SpeciesID)
+    if (length(invalid) > 0) {
+      stop(
+        "Invalid species: ", paste(invalid, collapse = ", "),
+        ". Choose from: ", paste(md$SpeciesID, collapse = ", ")
+      )
+    }
     species <- match.arg(species, choices = md$SpeciesID, several.ok = TRUE)
     md <- md[md$SpeciesID %in% species, ]
   }
 
   if (nrow(md) == 0) {
-    stop("No valid species selected. Available SpeciesIDs: ",
-         paste(md$SpeciesID, collapse = ", "))
+    stop(
+      "No valid species selected. Available SpeciesIDs: ",
+      paste(md$SpeciesID, collapse = ", ")
+    )
   }
 
   bfc <- BiocFileCache::BiocFileCache(dest_dir, ask = FALSE)
 
   if (download) {
     old_timeout <- getOption("timeout")
-    options(timeout = timeout)
+    options(timeout = max(timeout, old_timeout))
     on.exit(options(timeout = old_timeout), add = TRUE)
 
     for (i in seq_len(nrow(md))) {
@@ -124,17 +138,16 @@ downloadPlantTxDbs <- function(dest_dir = tools::R_user_dir("PlantTxDbHub", "dat
       res <- BiocFileCache::bfcquery(bfc, rname, "rname", exact = TRUE)
       if (nrow(res) == 0) {
         message("Adding to cache: ", rname)
-        rid <- BiocFileCache::bfcadd(bfc, rname = rname, fpath = url)
-      } else {
-        rid <- res$rid[1]
+        BiocFileCache::bfcadd(bfc, rname = rname, fpath = url)
       }
 
-      dest <- BiocFileCache::bfcrpath(bfc, rids = rid)
+      dest <- BiocFileCache::bfcrpath(bfc, rname = rname)
 
       if (!is_valid_sqlite(dest)) {
         message("Cached file '", basename(dest), "' appears corrupted. Re-downloading...")
+        rid <- BiocFileCache::bfcquery(bfc, rname, "rname", exact = TRUE)$rid[1]
         BiocFileCache::bfcdownload(bfc, rid, ask = FALSE)
-        dest <- BiocFileCache::bfcrpath(bfc, rids = rid)
+        dest <- BiocFileCache::bfcrpath(bfc, rname = rname)
 
         if (!is_valid_sqlite(dest)) {
           stop("Downloaded file '", basename(dest), "' is invalid after re-download. Check the URL or network.")
@@ -148,14 +161,40 @@ downloadPlantTxDbs <- function(dest_dir = tools::R_user_dir("PlantTxDbHub", "dat
 
 is_valid_sqlite <- function(path) {
   if (!requireNamespace("RSQLite", quietly = TRUE) ||
-      !requireNamespace("DBI", quietly = TRUE))
+    !requireNamespace("DBI", quietly = TRUE)) {
     return(file.exists(path))
+  }
 
-  tryCatch({
-    db <- DBI::dbConnect(RSQLite::SQLite(), dbname = path,
-                         flags = RSQLite::SQLITE_RO)
-    on.exit(DBI::dbDisconnect(db), add = TRUE)
-    DBI::dbGetQuery(db, "SELECT name FROM sqlite_master LIMIT 1")
-    TRUE
-  }, error = function(e) FALSE)
+  tryCatch(
+    {
+      db <- DBI::dbConnect(RSQLite::SQLite(),
+        dbname = path,
+        flags = RSQLite::SQLITE_RO
+      )
+      on.exit(DBI::dbDisconnect(db), add = TRUE)
+      DBI::dbGetQuery(db, "SELECT name FROM sqlite_master LIMIT 1")
+      TRUE
+    },
+    error = function(e) FALSE
+  )
+}
+
+#' Show data provider and source information for a species
+#'
+#' @param species Character. A SpeciesID from [listPlantTxDbSpecies()].
+#'
+#' @return A one-row `data.frame` with columns `SpeciesID`, `DataProvider`,
+#'   `SourceUrl`, `SourceVersion`.
+#' @export
+#' @examples
+#' getTxDbProvenance("Arabidopsis_TAIR10")
+getTxDbProvenance <- function(species) {
+  md <- .read_metadata()
+  if (!species %in% md$SpeciesID) {
+    stop("Invalid species. Choose from: ", paste(md$SpeciesID, collapse = ", "))
+  }
+  md[
+    md$SpeciesID == species,
+    c("SpeciesID", "DataProvider", "SourceUrl", "SourceVersion")
+  ]
 }
