@@ -35,8 +35,8 @@ listPlantTxDbSpecies <- function() {
 #'
 #' @param species Character string. A species identifier as returned by
 #'   [listPlantTxDbSpecies()] (e.g., `"Arabidopsis_TAIR10"`).
-#' @param dest_dir Character string. The directory where the SQLite files
-#'   are stored. Defaults to the same cache used by [downloadPlantTxDbs()].
+#' @param dest_dir Character string. The BiocFileCache directory.
+#'   Defaults to the same cache used by [downloadPlantTxDbs()].
 #'
 #' @return Character string giving the complete file path.
 #' @export
@@ -48,8 +48,12 @@ getTxDbPath <- function(species, dest_dir = tools::R_user_dir("PlantTxDbHub", "d
   if (!species %in% md$SpeciesID) {
     stop("Invalid species. Choose from: ", paste(md$SpeciesID, collapse = ", "))
   }
-  filename <- md$Filename[md$SpeciesID == species]
-  file.path(dest_dir, filename)
+  bfc <- BiocFileCache::BiocFileCache(dest_dir, ask = FALSE)
+  res <- BiocFileCache::bfcquery(bfc, species, "rname", exact = TRUE)
+  if (nrow(res) == 0) {
+    stop("Species '", species, "' has not been downloaded. Run downloadPlantTxDbs(species = '", species, "') first.")
+  }
+  BiocFileCache::bfcrpath(bfc, rids = res$rid[1])
 }
 
 #' Download plant TxDb SQLite files from Zenodo (or other sources)
@@ -59,41 +63,43 @@ getTxDbPath <- function(species, dest_dir = tools::R_user_dir("PlantTxDbHub", "d
 #' different server; the download URL is constructed from the
 #' `Location_Prefix` and `RDataPath` columns.
 #'
-#' @param dest_dir A character string specifying where to save the SQLite files.
+#' Files are cached using \pkg{BiocFileCache}.
+#'
+#' @param dest_dir A character string specifying the BiocFileCache location.
 #'   Defaults to a package‑specific user data directory (see
 #'   [tools::R_user_dir()]).
 #' @param timeout Numeric. Maximum download time in seconds per file.
-#'   Default 300 (5 minutes).
+#'   Default 1800 (30 minutes). Passed to the underlying download mechanism
+#'   via [options("timeout")].
 #' @param download Logical. If `TRUE` (default), files are actually downloaded.
-#'   If `FALSE`, the function only prepares the directory and returns its path
-#'   without attempting any download.
+#'   If `FALSE`, the function only prepares the cache directory and returns its
+#'   path without attempting any download.
 #' @param species Character vector. Which species to download. Choose from
 #'   the `SpeciesID` values returned by [listPlantTxDbSpecies()], e.g.
 #'   `"Arabidopsis_TAIR10"`. Default is `NULL`, downloading all available
 #'   databases.
 #'
-#' @return Invisibly returns the normalized path to the destination directory.
+#' @return Invisibly returns the BiocFileCache directory path.
 #' @export
-#' @importFrom utils download.file
+#' @importFrom BiocFileCache BiocFileCache bfcadd bfcquery bfccache bfcdownload bfcrpath
 #'
 #' @examples
-#' # Show the path without downloading
+#' # Show the cache path without downloading
 #' downloadPlantTxDbs(download = FALSE)
 #'
 #' \donttest{
 #' # Download only the Arabidopsis database
 #' downloadPlantTxDbs(species = "Arabidopsis_TAIR10")
 #'
-#' # Download all three databases
+#' # Download all available databases
 #' downloadPlantTxDbs()
 #' }
 downloadPlantTxDbs <- function(dest_dir = tools::R_user_dir("PlantTxDbHub", "data"),
-                               timeout = 30000,
+                               timeout = 1800,
                                download = TRUE,
                                species = NULL) {
   md <- .read_metadata()
 
-  # Filter by species if requested
   if (!is.null(species) && !isTRUE(species)) {
     species <- match.arg(species, choices = md$SpeciesID, several.ok = TRUE)
     md <- md[md$SpeciesID %in% species, ]
@@ -104,45 +110,40 @@ downloadPlantTxDbs <- function(dest_dir = tools::R_user_dir("PlantTxDbHub", "dat
          paste(md$SpeciesID, collapse = ", "))
   }
 
-  if (!dir.exists(dest_dir)) {
-    ok <- dir.create(dest_dir, showWarnings = FALSE, recursive = TRUE)
-    if (!ok || !dir.exists(dest_dir)) {
-      stop("Failed to create directory: ", dest_dir,
-           "\nPlease check permissions or provide a custom dest_dir.")
-    }
-  }
+  bfc <- BiocFileCache::BiocFileCache(dest_dir, ask = FALSE)
 
   if (download) {
+    old_timeout <- getOption("timeout")
+    options(timeout = timeout)
+    on.exit(options(timeout = old_timeout), add = TRUE)
+
     for (i in seq_len(nrow(md))) {
-      f <- md$Title[i]                     # filename, e.g. "TxDb.Athaliana.TAIR10.v62.sqlite"
+      rname <- md$SpeciesID[i]
       url <- paste0(md$Location_Prefix[i], md$RDataPath[i])
-      dest <- file.path(dest_dir, f)
 
-      if (!file.exists(dest) || !is_valid_sqlite(dest)) {
-        if (file.exists(dest)) {
-          message("File '", f, "' appears corrupted. Re-downloading...")
-          unlink(dest)
-        }
-        message("Downloading: ", f)
+      res <- BiocFileCache::bfcquery(bfc, rname, "rname", exact = TRUE)
+      if (nrow(res) == 0) {
+        message("Adding to cache: ", rname)
+        rid <- BiocFileCache::bfcadd(bfc, rname = rname, fpath = url)
+      } else {
+        rid <- res$rid[1]
+      }
 
-        if (requireNamespace("curl", quietly = TRUE)) {
-          curl::curl_download(url, dest, mode = "wb", quiet = FALSE,
-                              handle = curl::new_handle(timeout = timeout))
-        } else {
-          old_timeout <- getOption("timeout")
-          options(timeout = max(timeout, old_timeout))
-          on.exit(options(timeout = old_timeout), add = TRUE)
-          download.file(url, dest, mode = "wb")
-        }
+      dest <- BiocFileCache::bfcrpath(bfc, rids = rid)
+
+      if (!is_valid_sqlite(dest)) {
+        message("Cached file '", basename(dest), "' appears corrupted. Re-downloading...")
+        BiocFileCache::bfcdownload(bfc, rid, ask = FALSE)
+        dest <- BiocFileCache::bfcrpath(bfc, rids = rid)
 
         if (!is_valid_sqlite(dest)) {
-          stop("Downloaded file '", f, "' is invalid. Check the URL or network.")
+          stop("Downloaded file '", basename(dest), "' is invalid after re-download. Check the URL or network.")
         }
       }
     }
   }
 
-  invisible(normalizePath(dest_dir))
+  invisible(BiocFileCache::bfccache(bfc))
 }
 
 is_valid_sqlite <- function(path) {

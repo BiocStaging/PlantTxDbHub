@@ -7,7 +7,7 @@
 \title{PlantTxDbHub: AnnotationHub‑based TxDb databases for
 plants}
 \description{
-Provides TxDb (transcript database) annotations for plant species, initially including Arabidopsis thaliana (TAIR10), Oryza sativa (IRGSP-1.0), and Glycine max (Wm82 v2.1), based on Ensembl Plants release 62. The SQLite files are hosted on Zenodo (or other permanent URLs) and are downloaded on demand via the `downloadPlantTxDbs()` function. The list of available species and their download URLs is maintained in a curated CSV file (inst/extdata/metadata.csv), allowing users and contributors to easily add new databases without modifying R code.
+Provides TxDb (transcript database) annotations for plant species. The SQLite files are hosted on Zenodo (or other permanent URLs) and are downloaded on demand via the `downloadPlantTxDbs()` function. The list of available species and their download URLs is maintained in a curated CSV file (inst/extdata/metadata.csv), allowing users and contributors to easily add new databases without modifying R code.
 }
 \seealso{
 Useful links:

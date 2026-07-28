@@ -19,23 +19,23 @@ Description: Provides TxDb (transcript database) annotations for
     easily add new databases without modifying R code.
 Depends:
     R (>= 4.5.0)
-Suggests:
-    knitr,
-    rmarkdown,
-    testthat (>= 3.0.0),
-    BiocStyle,
-    BiocManager,
-    AnnotationHubData,
-    RSQLite,
-    DBI,
-    curl,
-    GenomeInfoDb,
-    GenomicFeatures
+Imports:  
+    BiocFileCache  
+Suggests:  
+    knitr,  
+    rmarkdown,  
+    testthat (>= 3.0.0),  
+    BiocStyle,  
+    BiocManager,  
+    RSQLite,  
+    DBI,  
+    GenomeInfoDb,  
+    GenomicFeatures 
 Encoding: UTF-8
 VignetteBuilder: knitr
 License: Artistic-2.0
 biocViews: AnnotationData, TxDb, Arabidopsis_thaliana, Oryza_sativa,
-    Glycine_max, SequenceAnnotation, AnnotationHub
+    Glycine_max, SequenceAnnotation
 URL: https://github.com/kabilanbio/PlantTxDbHub
 BugReports: https://github.com/kabilanbio/PlantTxDbHub/issues
 Config/roxygen2/version: 8.0.0

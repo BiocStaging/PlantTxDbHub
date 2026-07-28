@@ -10,8 +10,8 @@ getTxDbPath(species, dest_dir = tools::R_user_dir("PlantTxDbHub", "data"))
 \item{species}{Character string. A species identifier as returned by
 [listPlantTxDbSpecies()] (e.g., `"Arabidopsis_TAIR10"`).}
 
-\item{dest_dir}{Character string. The directory where the SQLite files
-are stored. Defaults to the same cache used by [downloadPlantTxDbs()].}
+\item{dest_dir}{Character string. The BiocFileCache directory.
+Defaults to the same cache used by [downloadPlantTxDbs()].}
 }
 \value{
 Character string giving the complete file path.

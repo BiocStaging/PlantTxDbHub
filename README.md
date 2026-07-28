@@ -18,6 +18,13 @@ Currently included species:
 
 ## Installation
 
+# Install from Bioconductor:
+```r
+if (!require("BiocManager", quietly = TRUE))  
+    install.packages("BiocManager")  
+BiocManager::install("PlantTxDbHub")
+```
+# To install the developer version from GitHub:
 ```r
 if (!require("remotes", quietly = TRUE))
     install.packages("remotes")

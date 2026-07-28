@@ -6,22 +6,23 @@
 \usage{
 downloadPlantTxDbs(
   dest_dir = tools::R_user_dir("PlantTxDbHub", "data"),
-  timeout = 30000,
+  timeout = 1800,
   download = TRUE,
   species = NULL
 )
 }
 \arguments{
-\item{dest_dir}{A character string specifying where to save the SQLite files.
+\item{dest_dir}{A character string specifying the BiocFileCache location.
 Defaults to a package‑specific user data directory (see
 [tools::R_user_dir()]).}
 
 \item{timeout}{Numeric. Maximum download time in seconds per file.
-Default 300 (5 minutes).}
+Default 1800 (30 minutes). Passed to the underlying download mechanism
+via [options("timeout")].}
 
 \item{download}{Logical. If `TRUE` (default), files are actually downloaded.
-If `FALSE`, the function only prepares the directory and returns its path
-without attempting any download.}
+If `FALSE`, the function only prepares the cache directory and returns its
+path without attempting any download.}
 
 \item{species}{Character vector. Which species to download. Choose from
 the `SpeciesID` values returned by [listPlantTxDbSpecies()], e.g.
@@ -29,7 +30,7 @@ the `SpeciesID` values returned by [listPlantTxDbSpecies()], e.g.
 databases.}
 }
 \value{
-Invisibly returns the normalized path to the destination directory.
+Invisibly returns the BiocFileCache directory path.
 }
 \description{
 Downloads plant transcript annotation databases based on the internal
@@ -37,15 +38,18 @@ metadata file `inst/extdata/metadata.csv`. Each file can reside on a
 different server; the download URL is constructed from the
 `Location_Prefix` and `RDataPath` columns.
 }
+\details{
+Files are cached using \pkg{BiocFileCache}.
+}
 \examples{
-# Show the path without downloading
+# Show the cache path without downloading
 downloadPlantTxDbs(download = FALSE)
 
 \donttest{
 # Download only the Arabidopsis database
 downloadPlantTxDbs(species = "Arabidopsis_TAIR10")
 
-# Download all three databases
+# Download all available databases
 downloadPlantTxDbs()
 }
 }
