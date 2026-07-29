@@ -21,5 +21,7 @@ Returns the full file path to a previously downloaded TxDb database.
 If the file does not exist in the cache, the function stops with an error.
 }
 \examples{
+# Download only the Arabidopsis database
+downloadPlantTxDbs(species = "Arabidopsis_TAIR10")
 getTxDbPath("Arabidopsis_TAIR10")
 }

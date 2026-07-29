@@ -1,6 +1,6 @@
 # PlantTxDbHub
 
-[![Version](https://img.shields.io/badge/version-0.99.5-blue)](https://github.com/kabilanbio/PlantTxDbHub)
+[![Version](https://img.shields.io/badge/version-0.99.6-blue)](https://github.com/kabilanbio/PlantTxDbHub)
 [![Bioconductor](https://img.shields.io/badge/Bioconductor-submitted-brightgreen)](https://github.com/BiocStaging/PlantTxDbHub)
 
 **PlantTxDbHub** provides ready‑to‑use **TxDb** (transcript database) annotations

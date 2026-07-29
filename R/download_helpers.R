@@ -45,6 +45,8 @@ listPlantTxDbSpecies <- function() {
 #' @export
 #' @importFrom BiocFileCache BiocFileCache bfcquery bfcrpath
 #' @examples
+#' # Download only the Arabidopsis database
+#' downloadPlantTxDbs(species = "Arabidopsis_TAIR10")
 #' getTxDbPath("Arabidopsis_TAIR10")
 getTxDbPath <- function(species, dest_dir = tools::R_user_dir("PlantTxDbHub", "data")) {
   md <- listPlantTxDbSpecies()

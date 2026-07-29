@@ -59,7 +59,7 @@ BiocManager::install("PlantTxDbHub")
 While the package is under Bioconductor review, install the development
 version directly from GitHub:
 
-```{r install_github}
+```{r install_github, eval = FALSE}
 if (!require("remotes", quietly = TRUE))
     install.packages("remotes")
 remotes::install_github("kabilanbio/PlantTxDbHub")
